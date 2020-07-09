@@ -5,6 +5,7 @@
 
 #define BUTTON_PIN 8
 boolean but;
+boolean loopForever = true;
 
 /* 8x8 display init */
 
@@ -20,9 +21,20 @@ boolean but;
 #define CLK_PIN   12
 
 MD_Parola P = MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
+MD_MAX72XX MAX = MD_MAX72XX (HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
 #define PAUSE_TIME 1000
 
 uint8_t iching[] = {8, 0, 126, 126, 84, 84, 126, 126, 0};
+uint8_t yinyang[] = {8,
+  B00111100,
+  B01111110,
+  B11011111,
+  B11111011,
+  B10110001,
+  B10000101,
+  B01000010,
+  B00111100
+};
 
 /* side LEDs init */
 
@@ -80,7 +92,9 @@ void setup() {
   
   P.begin();
   P.setSpeed(100);
+  P.setPause(2000);
   P.setIntensity(0);
+  P.setTextEffect(PA_GROW_UP, PA_GROW_DOWN);
 
   randomSeed(analogRead(0));
 
@@ -91,35 +105,46 @@ void setup() {
   pinMode (LED2_PIN, OUTPUT);
   pinMode (LED1_PIN, OUTPUT);
 
-  play_iching_tune();
+  P.addChar('#', yinyang);
+  P.addChar('$', iching);
+  
+  P.write("#");
 
-  P.displayText("F", PA_CENTER, P.getSpeed(), PAUSE_TIME, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
+//  play_iching_tune();
+  play_stable_roll();
+
+//  P.write("$");
+//  MAX.clear();
+//  MAX.setRow(0, 3, B011010);
+
 }
 
 void loop() {
 
   but = digitalRead(BUTTON_PIN);
   if (!but) {
-    pat = 0;
+    pat = random(0, 64);
+//    MAX.setRow(0, 4, pat);
     set_LEDs(pat);
     play_transient_roll();
   }
-  
-  if (P.displayAnimate()) {
 
-    set_LEDs(++pat);
-
-    uint8_t hexagram = random(0, 64);
-    iching[4] = hexagram << 1;
-    iching[5] = hexagram << 1;
-    
-    P.addChar('$', iching);
-    play_complete_effect();
-    
-    P.setTextBuffer("$");
-    P.setCharSpacing(1);
-    P.displayReset();
-  }
+//  
+//  if (loopForever && P.displayAnimate()) {
+//
+//    uint8_t hexagram = random(0, 64);
+//    set_LEDs(hexagram);
+//    
+//    iching[4] = hexagram << 1;
+//    iching[5] = hexagram << 1;
+//    
+//    P.addChar('$', iching);
+////    play_stable_roll();
+//    
+//    P.setTextBuffer("#");
+//    P.setCharSpacing(1);
+//    P.displayReset();
+//  }
 }
 
 void play_iching_tune () {
