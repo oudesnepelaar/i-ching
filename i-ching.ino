@@ -97,8 +97,6 @@ const byte music_iching[] = {
 
 void setup() {
 
-  Serial.begin(9600);
-
   digitalWrite(LED_BUILTIN, LOW);
 
   MAX->clear();
@@ -135,27 +133,41 @@ void loop() {
   updateLEDs();
 }
 
+void reset() {
+
+  segIndex = 0;
+  ledPattern = 0;
+  blinkIndex = 0;
+
+  updateLEDs();
+  printHexagram();
+  
+  busyRolling = false;
+
+  play_complete();
+}
+
 void rollSegment() {
 
   busyRolling = true;
+  
   if (segIndex > 5) {
-    
-    segIndex = 0;
-    ledPattern = 0;
-    blinkIndex = 0;
 
-    updateLEDs();
+    reset();
+    return;
   }
 
   uint8_t segment = random(0, 64);
-  if (segment > 32) {
+  
+  if (segment >= 32) {
     hexagram[segIndex] = OPEN;
   } else {
     hexagram[segIndex] = CLOSED;
   }
 
   uint8_t transcendence = random(0,64);
-  if (transcendence > 32) {
+  
+  if (transcendence >= 32) {
 
     ledPattern = (ledPattern | (1 << segIndex)); // light the LED when it is a transient segment
     play_transient();
@@ -166,36 +178,25 @@ void rollSegment() {
   segIndex++;
   blinkIndex++;
 
-  if (segIndex > 5) play_iching();
-
   updateLEDs();
   
   printHexagram();
   busyRolling = false;
+
+  if (segIndex > 5) {
+
+    delay(800);
+    play_iching();
+  }
 }
 
 void printHexagram() {
 
   MAX->clear();
+  
   for (uint8_t i = 0; i < segIndex; i++) {
-    MAX->setRow(0, 0, (i + 1), hexagram[i]);  
+    MAX->setRow(0, 0, (7 - (i + 1)), hexagram[i]);  
   }
-}
-
-void play_iching () {
-  play (music_iching, sizeof(music_iching), score_note_millis, BUZZER_PIN);
-}
-
-void play_stable () {
-  play (effect_roll_stable, sizeof(effect_roll_stable), score_note_millis, BUZZER_PIN);
-}
-
-void play_transient () {
-  play (effect_roll_transient, sizeof(effect_roll_transient), score_note_millis, BUZZER_PIN);
-}
-
-void play_complete () {
-  play (effect_complete, sizeof(effect_complete), score_note_millis, BUZZER_PIN);
 }
 
 void updateLEDs() {
@@ -222,4 +223,20 @@ void setLEDs (byte pattern) {
   digitalWrite (LED3_PIN, (pattern & 4));
   digitalWrite (LED2_PIN, (pattern & 2));
   digitalWrite (LED1_PIN, (pattern & 1));
+}
+
+void play_iching () {
+  play (music_iching, sizeof(music_iching), score_note_millis, BUZZER_PIN);
+}
+
+void play_stable () {
+  play (effect_roll_stable, sizeof(effect_roll_stable), score_note_millis, BUZZER_PIN);
+}
+
+void play_transient () {
+  play (effect_roll_transient, sizeof(effect_roll_transient), score_note_millis, BUZZER_PIN);
+}
+
+void play_complete () {
+  play (effect_complete, sizeof(effect_complete), score_note_millis, BUZZER_PIN);
 }
