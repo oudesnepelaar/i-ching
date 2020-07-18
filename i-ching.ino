@@ -1,7 +1,8 @@
 #include <MD_MAX72xx.h>
 #include <SPI.h>
 #include <MD_Parola.h>
-
+#include "chords.h"
+#include "hexagram.h"
 /* 
   I-Ching oracle consultation device.
   by Ferrie Bank - Amsterdam, 8 July 2020
@@ -28,7 +29,12 @@ uint8_t OPEN = B01100110;
 uint8_t CLOSED = B01111110;
 
 uint8_t hexagram[6];
+uint8_t hexaValue = 0;
+uint8_t transHexaValue = 0;
 uint8_t segIndex = 0;
+
+char today[64];
+char tomorrow[64];
 
 boolean busyRolling = false;
 
@@ -59,8 +65,6 @@ const byte LED2_PIN = 3;
 const byte LED1_PIN = 2;
 
 /* music library init */
-
-#include "chords.h"
 
 const int whole_note_millis = 1000;
 const int score_element_resolution = 16; // each element in the score array represents a 1/16 (= 1/resolution value) note duration.
@@ -97,6 +101,8 @@ const byte music_iching[] = {
 
 void setup() {
 
+  Serial.begin(9600);
+  
   digitalWrite(LED_BUILTIN, LOW);
 
   MAX->clear();
@@ -136,6 +142,8 @@ void loop() {
 void reset() {
 
   segIndex = 0;
+  hexaValue = 0;
+  transHexaValue = 0;
   ledPattern = 0;
   blinkIndex = 0;
 
@@ -158,20 +166,33 @@ void rollSegment() {
   }
 
   uint8_t segment = random(0, 64);
+  uint8_t origValue = hexaValue;
+  uint8_t segValue = 0;
   
   if (segment >= 32) {
+    
+    hexaValue = origValue & ~(1 << segIndex);
     hexagram[segIndex] = OPEN;
+    segValue = 0;
+    
   } else {
+    
+    hexaValue = origValue | (1 << segIndex);
     hexagram[segIndex] = CLOSED;
+    segValue = 1;
   }
 
   uint8_t transcendence = random(0,64);
   
   if (transcendence >= 32) {
 
-    ledPattern = (ledPattern | (1 << segIndex)); // light the LED when it is a transient segment
+    ledPattern = (ledPattern | (1 << segIndex));
+    transHexaValue = origValue + (~segValue << segIndex);
     play_transient();
+    
   } else {
+    
+    transHexaValue = origValue + (segValue << segIndex);
     play_stable();
   }
   
@@ -186,6 +207,7 @@ void rollSegment() {
   if (segIndex > 5) {
 
     delay(800);
+    setDescription();
     play_iching();
   }
 }
@@ -197,6 +219,16 @@ void printHexagram() {
   for (uint8_t i = 0; i < segIndex; i++) {
     MAX->setRow(0, 0, (7 - (i + 1)), hexagram[i]);  
   }
+}
+
+void setDescription() {
+
+  Serial.println(hexaValue);
+  Serial.println(transHexaValue);
+  strcpy_P(today, (char *) pgm_read_word(&(descriptions[hexaValue])));
+  strcpy_P(tomorrow, (char *) pgm_read_word(&(descriptions[transHexaValue])));
+  Serial.println(today);
+  Serial.println(tomorrow);
 }
 
 void updateLEDs() {
