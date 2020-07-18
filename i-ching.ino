@@ -1,3 +1,7 @@
+#include <MD_MAX72xx.h>
+#include <SPI.h>
+#include <MD_Parola.h>
+
 /* 
   I-Ching oracle consultation device.
   by Ferrie Bank - Amsterdam, 8 July 2020
@@ -5,13 +9,8 @@
 
 #define BUTTON_PIN 8
 boolean but;
-boolean loopForever = true;
 
 /* 8x8 display init */
-
-#include <MD_Parola.h>
-#include <MD_MAX72xx.h>
-#include <SPI.h>
 
 #define HARDWARE_TYPE MD_MAX72XX::ICSTATION_HW
 #define MAX_DEVICES 1
@@ -21,10 +20,22 @@ boolean loopForever = true;
 #define CLK_PIN   12
 
 MD_Parola P = MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
-MD_MAX72XX MAX = MD_MAX72XX (HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
+MD_MAX72XX *MAX = P.getGraphicObject();
+
 #define PAUSE_TIME 1000
 
-uint8_t iching[] = {8, 0, 126, 126, 84, 84, 126, 126, 0};
+uint8_t OPEN = B01100110;
+uint8_t CLOSED = B01111110;
+
+uint8_t hexagram[6];
+uint8_t segIndex = 0;
+
+boolean busyRolling = false;
+
+uint8_t ledPattern = 0;
+uint8_t blinkIndex = 0;
+uint16_t blinkCount = 0;
+
 uint8_t yinyang[] = {8,
   B00111100,
   B01111110,
@@ -85,16 +96,19 @@ const byte music_iching[] = {
 };
 
 void setup() {
-  
+
+  Serial.begin(9600);
+
   digitalWrite(LED_BUILTIN, LOW);
 
+  MAX->clear();
+  
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   
   P.begin();
   P.setSpeed(100);
   P.setPause(2000);
   P.setIntensity(0);
-  P.setTextEffect(PA_GROW_UP, PA_GROW_DOWN);
 
   randomSeed(analogRead(0));
 
@@ -104,66 +118,103 @@ void setup() {
   pinMode (LED3_PIN, OUTPUT);
   pinMode (LED2_PIN, OUTPUT);
   pinMode (LED1_PIN, OUTPUT);
+  setLEDs(0);
 
-  P.addChar('#', yinyang);
-  P.addChar('$', iching);
-  
-  P.write("#");
-
-//  play_iching_tune();
-  play_stable_roll();
-
-//  P.write("$");
-//  MAX.clear();
-//  MAX.setRow(0, 3, B011010);
-
+  play_complete();
 }
 
 void loop() {
 
   but = digitalRead(BUTTON_PIN);
-  if (!but) {
-    pat = random(0, 64);
-//    MAX.setRow(0, 4, pat);
-    set_LEDs(pat);
-    play_transient_roll();
+  if (!but && !busyRolling) {
+    
+    rollSegment();
+    delay(800);
   }
 
-//  
-//  if (loopForever && P.displayAnimate()) {
-//
-//    uint8_t hexagram = random(0, 64);
-//    set_LEDs(hexagram);
-//    
-//    iching[4] = hexagram << 1;
-//    iching[5] = hexagram << 1;
-//    
-//    P.addChar('$', iching);
-////    play_stable_roll();
-//    
-//    P.setTextBuffer("#");
-//    P.setCharSpacing(1);
-//    P.displayReset();
-//  }
+  updateLEDs();
 }
 
-void play_iching_tune () {
+void rollSegment() {
+
+  busyRolling = true;
+  if (segIndex > 5) {
+    
+    segIndex = 0;
+    ledPattern = 0;
+    blinkIndex = 0;
+
+    updateLEDs();
+  }
+
+  uint8_t segment = random(0, 64);
+  if (segment > 32) {
+    hexagram[segIndex] = OPEN;
+  } else {
+    hexagram[segIndex] = CLOSED;
+  }
+
+  uint8_t transcendence = random(0,64);
+  if (transcendence > 32) {
+
+    ledPattern = (ledPattern | (1 << segIndex)); // light the LED when it is a transient segment
+    play_transient();
+  } else {
+    play_stable();
+  }
+  
+  segIndex++;
+  blinkIndex++;
+
+  if (segIndex > 5) play_iching();
+
+  updateLEDs();
+  
+  printHexagram();
+  busyRolling = false;
+}
+
+void printHexagram() {
+
+  MAX->clear();
+  for (uint8_t i = 0; i < segIndex; i++) {
+    MAX->setRow(0, 0, (i + 1), hexagram[i]);  
+  }
+}
+
+void play_iching () {
   play (music_iching, sizeof(music_iching), score_note_millis, BUZZER_PIN);
 }
 
-void play_stable_roll () {
+void play_stable () {
   play (effect_roll_stable, sizeof(effect_roll_stable), score_note_millis, BUZZER_PIN);
 }
 
-void play_transient_roll () {
+void play_transient () {
   play (effect_roll_transient, sizeof(effect_roll_transient), score_note_millis, BUZZER_PIN);
 }
 
-void play_complete_effect () {
+void play_complete () {
   play (effect_complete, sizeof(effect_complete), score_note_millis, BUZZER_PIN);
 }
 
-void set_LEDs (byte pattern) {
+void updateLEDs() {
+
+  uint8_t burnPattern = ledPattern;
+  
+  if (blinkCount > 10000) {
+    burnPattern = burnPattern | (1 << blinkIndex);
+  } else {
+    burnPattern = burnPattern & ~(1 << blinkIndex);
+  }
+  
+  if (blinkCount > 16000) blinkCount = 0;
+  blinkCount++;
+  
+  setLEDs(burnPattern);
+}
+
+void setLEDs (byte pattern) {
 
   digitalWrite (LED6_PIN, (pattern & 32));
   digitalWrite (LED5_PIN, (pattern & 16));
