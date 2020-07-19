@@ -279,12 +279,14 @@ void cycleHexagrams() {
 
   but = digitalRead(BUTTON_PIN);
 
-  char kwhex[5] = ' ';
+  char kwhex[5];
+  kwhex[0] = ' ';
   strncat(kwhex, today, 4);
   kwhex[3] = ' ';
   kwhex[4] = '\0';
   
-  char kwtrans[5] = ' ';
+  char kwtrans[5];
+  kwtrans[0] = ' ';
   strncat(kwtrans, tomorrow, 4);
   kwtrans[3] = ' ';
   kwtrans[4] = '\0';
