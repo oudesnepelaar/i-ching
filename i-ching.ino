@@ -30,6 +30,7 @@ uint8_t CLOSED = B01111110;
 
 uint8_t hexagram[6];
 uint8_t hexaValue = 0;
+uint8_t transHexagram[6];
 uint8_t transHexaValue = 0;
 uint8_t segIndex = 0;
 
@@ -102,20 +103,19 @@ const byte music_iching[] = {
 void setup() {
 
   Serial.begin(9600);
-  
   digitalWrite(LED_BUILTIN, LOW);
 
-  MAX->clear();
-  
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
-  
   P.begin();
   P.setSpeed(100);
   P.setPause(2000);
   P.setIntensity(0);
+  P.setTextEffect(PA_SCROLL_LEFT, PA_SCROLL_LEFT);
+
+  initDisplay();
 
   randomSeed(analogRead(0));
 
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode (LED6_PIN, OUTPUT);
   pinMode (LED5_PIN, OUTPUT);
   pinMode (LED4_PIN, OUTPUT);
@@ -125,6 +125,11 @@ void setup() {
   setLEDs(0);
 
   play_complete();
+}
+
+void initDisplay() {
+    
+  MAX->clear();
 }
 
 void loop() {
@@ -148,7 +153,7 @@ void reset() {
   blinkIndex = 0;
 
   updateLEDs();
-  printHexagram();
+  printHexagram(hexagram);
   
   busyRolling = false;
 
@@ -166,20 +171,19 @@ void rollSegment() {
   }
 
   uint8_t segment = random(0, 64);
-  uint8_t origValue = hexaValue;
-  uint8_t segValue = 0;
+  boolean isClosed;
   
   if (segment >= 32) {
     
-    hexaValue = origValue & ~(1 << segIndex);
+    hexaValue = setBit (hexaValue, segIndex, false);
     hexagram[segIndex] = OPEN;
-    segValue = 0;
+    isClosed = false;
     
   } else {
     
-    hexaValue = origValue | (1 << segIndex);
+    hexaValue = setBit (hexaValue, segIndex, true);
     hexagram[segIndex] = CLOSED;
-    segValue = 1;
+    isClosed = true;
   }
 
   uint8_t transcendence = random(0,64);
@@ -187,21 +191,23 @@ void rollSegment() {
   if (transcendence >= 32) {
 
     ledPattern = (ledPattern | (1 << segIndex));
-    transHexaValue = origValue + (~segValue << segIndex);
+    transHexaValue = setBit (transHexaValue, segIndex, !isClosed);
+    transHexagram[segIndex] = ((isClosed) ? OPEN : CLOSED);
     play_transient();
     
   } else {
     
-    transHexaValue = origValue + (segValue << segIndex);
+    transHexaValue = setBit (transHexaValue, segIndex, isClosed);
+    transHexagram[segIndex] = ((isClosed) ? CLOSED : OPEN);
     play_stable();
   }
-  
+
   segIndex++;
   blinkIndex++;
 
   updateLEDs();
   
-  printHexagram();
+  printHexagram(hexagram);
   busyRolling = false;
 
   if (segIndex > 5) {
@@ -209,12 +215,30 @@ void rollSegment() {
     delay(800);
     setDescription();
     play_iching();
+    scrollDescription();
+    printHexagram(transHexagram);
+    play_iching();
+    scrollTransientDescription();
+    cycleHexagrams();
   }
 }
 
-void printHexagram() {
+uint8_t setBit (uint8_t origValue, uint8_t index, boolean setToOne) {
 
-  MAX->clear();
+  uint8_t result;
+
+  if (setToOne) {
+    result = origValue | (1 << index);
+  } else {
+    result = origValue & ~(1 << index);
+  }
+
+  return result;
+}
+
+void printHexagram(uint8_t hexagram[]) {
+
+  initDisplay();
   
   for (uint8_t i = 0; i < segIndex; i++) {
     MAX->setRow(0, 0, (7 - (i + 1)), hexagram[i]);  
@@ -223,12 +247,83 @@ void printHexagram() {
 
 void setDescription() {
 
-  Serial.println(hexaValue);
-  Serial.println(transHexaValue);
   strcpy_P(today, (char *) pgm_read_word(&(descriptions[hexaValue])));
   strcpy_P(tomorrow, (char *) pgm_read_word(&(descriptions[transHexaValue])));
-  Serial.println(today);
-  Serial.println(tomorrow);
+}
+
+void scrollDescription() {
+
+  initDisplay();
+  
+  char text[75] = " NOW: ";
+  strcat(text, today);
+  
+  P.setTextBuffer(text);
+  P.displayReset();
+  while (!P.displayAnimate()){;};
+}
+
+void scrollTransientDescription() {
+
+  initDisplay();
+
+  char text[75] = " LATER: ";
+  strcat(text, tomorrow);
+
+  P.setTextBuffer(text);
+  P.displayReset();
+  while (!P.displayAnimate()){;};
+}
+
+void cycleHexagrams() {
+
+  but = digitalRead(BUTTON_PIN);
+
+  char kwhex[5] = ' ';
+  strncat(kwhex, today, 4);
+  kwhex[3] = ' ';
+  kwhex[4] = '\0';
+  
+  char kwtrans[5] = ' ';
+  strncat(kwtrans, tomorrow, 4);
+  kwtrans[3] = ' ';
+  kwtrans[4] = '\0';
+
+  while(but) {
+    
+    printHexagram(hexagram);
+    delay(2000);
+
+    if(!digitalRead(BUTTON_PIN)) {
+      reset;
+      return;
+    }
+
+    showText(kwhex);
+
+    if(!digitalRead(BUTTON_PIN)) {
+      reset;
+      return;
+    }
+    
+    printHexagram(transHexagram);
+    delay(2000);
+
+    if(!digitalRead(BUTTON_PIN)) {
+      reset;
+      return;
+    }
+
+    showText(kwtrans);
+    but = digitalRead(BUTTON_PIN);
+  }
+}
+
+void showText(char text[]) {
+  
+  P.setTextBuffer(text);
+  P.displayReset();
+  while (!P.displayAnimate()){;};
 }
 
 void updateLEDs() {
