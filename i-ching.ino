@@ -279,17 +279,17 @@ void cycleHexagrams() {
 
   but = digitalRead(BUTTON_PIN);
 
-  char kwhex[5];
+  char kwhex[4];
   kwhex[0] = ' ';
-  strncat(kwhex, today, 4);
-  kwhex[3] = ' ';
-  kwhex[4] = '\0';
+  kwhex[1] = today[0];
+  kwhex[2] = today[1];
+  kwhex[3] = '\0';
   
-  char kwtrans[5];
+  char kwtrans[4];
   kwtrans[0] = ' ';
-  strncat(kwtrans, tomorrow, 4);
-  kwtrans[3] = ' ';
-  kwtrans[4] = '\0';
+  kwtrans[1] = tomorrow[0];
+  kwtrans[2] = tomorrow[1];
+  kwtrans[3] = '\0';
 
   while(but) {
     
@@ -321,9 +321,9 @@ void cycleHexagrams() {
   }
 }
 
-void showText(char text[]) {
+void showText(char output[]) {
   
-  P.setTextBuffer(text);
+  P.setTextBuffer(output);
   P.displayReset();
   while (!P.displayAnimate()){;};
 }
