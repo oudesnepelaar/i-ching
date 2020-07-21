@@ -111,9 +111,7 @@ void setup() {
   P.setIntensity(0);
   P.setTextEffect(PA_SCROLL_LEFT, PA_SCROLL_LEFT);
 
-  initDisplay();
-
-  randomSeed(analogRead(0));
+  MAX->clear();
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode (LED6_PIN, OUTPUT);
@@ -127,9 +125,12 @@ void setup() {
   play_complete();
 }
 
-void initDisplay() {
-    
-  MAX->clear();
+void setRandom() {
+
+  unsigned long analog = analogRead(0);
+  unsigned long timeCount = millis();
+  
+  randomSeed(analog ^ timeCount);
 }
 
 void loop() {
@@ -163,6 +164,7 @@ void reset() {
 void rollSegment() {
 
   busyRolling = true;
+  setRandom();
   
   if (segIndex > 5) {
 
@@ -238,7 +240,7 @@ uint8_t setBit (uint8_t origValue, uint8_t index, boolean setToOne) {
 
 void printHexagram(uint8_t hexagram[]) {
 
-  initDisplay();
+  MAX->clear();
   
   for (uint8_t i = 0; i < segIndex; i++) {
     MAX->setRow(0, 0, (7 - (i + 1)), hexagram[i]);  
@@ -253,7 +255,7 @@ void setDescription() {
 
 void scrollDescription() {
 
-  initDisplay();
+  MAX->clear();
   
   char text[75] = " NOW: ";
   strcat(text, today);
@@ -265,7 +267,7 @@ void scrollDescription() {
 
 void scrollTransientDescription() {
 
-  initDisplay();
+  MAX->clear();
 
   char text[75] = " LATER: ";
   strcat(text, tomorrow);
