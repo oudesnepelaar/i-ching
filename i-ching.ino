@@ -43,14 +43,15 @@ uint8_t ledPattern = 0;
 uint8_t blinkIndex = 0;
 uint16_t blinkCount = 0;
 
-uint8_t yinyang[] = {8,
+uint8_t yinyang[] = {
+
   B00111100,
-  B01111110,
-  B11011111,
-  B11111011,
-  B10110001,
-  B10000101,
-  B01000010,
+  B01110010,
+  B11100101,
+  B11110001,
+  B11111001,
+  B11011001,
+  B01110010,
   B00111100
 };
 
@@ -122,6 +123,9 @@ void setup() {
   pinMode (LED1_PIN, OUTPUT);
   setLEDs(0);
 
+  printLogo(yinyang);
+  delay(1200);
+  
   play_complete();
 }
 
@@ -238,6 +242,15 @@ uint8_t setBit (uint8_t origValue, uint8_t index, boolean setToOne) {
   return result;
 }
 
+void printLogo(uint8_t logo[]) {
+
+  MAX->clear();
+  
+  for (uint8_t i = 0; i < 8; i++) {
+    MAX->setRow(0, 0, i, logo[i]);  
+  }  
+}
+
 void printHexagram(uint8_t hexagram[]) {
 
   MAX->clear();
@@ -299,14 +312,14 @@ void cycleHexagrams() {
     delay(2000);
 
     if(!digitalRead(BUTTON_PIN)) {
-      reset;
+      reset();
       return;
     }
 
     showText(kwhex);
 
     if(!digitalRead(BUTTON_PIN)) {
-      reset;
+      reset();
       return;
     }
     
@@ -314,7 +327,7 @@ void cycleHexagrams() {
     delay(2000);
 
     if(!digitalRead(BUTTON_PIN)) {
-      reset;
+      reset();
       return;
     }
 
