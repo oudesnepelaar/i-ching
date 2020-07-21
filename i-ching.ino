@@ -66,7 +66,7 @@ const byte LED3_PIN = 4;
 const byte LED2_PIN = 3;
 const byte LED1_PIN = 2;
 
-const byte BUTTON_LED_PIN = 1;
+const byte BUTTON_LED_PIN = 1; // make sure the Serial() connection is not enabled, because this will prevent the use of pins 0 and 1 as IN/OUTPUTS
 
 /* music library init */
 
