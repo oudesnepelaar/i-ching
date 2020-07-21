@@ -66,6 +66,8 @@ const byte LED3_PIN = 4;
 const byte LED2_PIN = 3;
 const byte LED1_PIN = 2;
 
+const byte BUTTON_LED_PIN = 1;
+
 /* music library init */
 
 const int whole_note_millis = 1000;
@@ -103,7 +105,6 @@ const byte music_iching[] = {
 
 void setup() {
 
-  Serial.begin(9600);
   digitalWrite(LED_BUILTIN, LOW);
 
   P.begin();
@@ -115,18 +116,22 @@ void setup() {
   MAX->clear();
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode (BUTTON_LED_PIN, OUTPUT);
   pinMode (LED6_PIN, OUTPUT);
   pinMode (LED5_PIN, OUTPUT);
   pinMode (LED4_PIN, OUTPUT);
   pinMode (LED3_PIN, OUTPUT);
   pinMode (LED2_PIN, OUTPUT);
   pinMode (LED1_PIN, OUTPUT);
+
   setLEDs(0);
+  digitalWrite (BUTTON_LED_PIN, LOW);
 
   printLogo(yinyang);
   delay(1200);
   
   play_complete();
+  digitalWrite (BUTTON_LED_PIN, HIGH);
 }
 
 void setRandom() {
@@ -138,6 +143,8 @@ void setRandom() {
 }
 
 void loop() {
+
+  digitalWrite (BUTTON_LED_PIN, HIGH);
 
   but = digitalRead(BUTTON_PIN);
   if (!but && !busyRolling) {
@@ -161,13 +168,13 @@ void reset() {
   printHexagram(hexagram);
   
   busyRolling = false;
-
   play_complete();
 }
 
 void rollSegment() {
 
   busyRolling = true;
+  digitalWrite (BUTTON_LED_PIN, LOW);
   setRandom();
   
   if (segIndex > 5) {
@@ -215,7 +222,7 @@ void rollSegment() {
   
   printHexagram(hexagram);
   busyRolling = false;
-
+  
   if (segIndex > 5) {
 
     delay(800);
@@ -292,6 +299,7 @@ void scrollTransientDescription() {
 
 void cycleHexagrams() {
 
+  digitalWrite (BUTTON_LED_PIN, HIGH);
   but = digitalRead(BUTTON_PIN);
 
   char kwhex[4];
@@ -306,9 +314,18 @@ void cycleHexagrams() {
   kwtrans[2] = tomorrow[1];
   kwtrans[3] = '\0';
 
+  char buff[] = "***   ";
+
   while(but) {
     
     printHexagram(hexagram);
+
+    
+    if(!digitalRead(BUTTON_PIN)) {
+      reset();
+      return;
+    }
+
     delay(2000);
 
     if(!digitalRead(BUTTON_PIN)) {
@@ -324,6 +341,11 @@ void cycleHexagrams() {
     }
     
     printHexagram(transHexagram);
+
+    if(!digitalRead(BUTTON_PIN)) {
+      reset();
+      return;
+    }
     delay(2000);
 
     if(!digitalRead(BUTTON_PIN)) {
@@ -332,6 +354,14 @@ void cycleHexagrams() {
     }
 
     showText(kwtrans);
+
+    if(!digitalRead(BUTTON_PIN)) {
+      reset();
+      return;
+    }
+
+    showText(buff);
+
     but = digitalRead(BUTTON_PIN);
   }
 }
