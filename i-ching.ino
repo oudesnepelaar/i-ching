@@ -34,8 +34,10 @@ uint8_t transHexagram[6];
 uint8_t transHexaValue = 0;
 uint8_t segIndex = 0;
 
-char today[64];
-char tomorrow[64];
+const uint8_t messageLength = 105;
+
+char today[messageLength];
+char tomorrow[messageLength];
 
 boolean busyRolling = false;
 
@@ -277,7 +279,7 @@ void scrollDescription() {
 
   MAX->clear();
   
-  char text[75] = " NOW: ";
+  char text[messageLength] = " NOW: ";
   strcat(text, today);
   
   P.setTextBuffer(text);
@@ -289,7 +291,7 @@ void scrollTransientDescription() {
 
   MAX->clear();
 
-  char text[75] = " LATER: ";
+  char text[messageLength] = " LATER: ";
   strcat(text, tomorrow);
 
   P.setTextBuffer(text);
