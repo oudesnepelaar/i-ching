@@ -10,6 +10,6 @@ Parts:
  - 1x MAX7219 8x8 LED matrix module with onboard driver
 
 Ferrie J Bank,
-Amsterdam 26 June 2020
+Amsterdam 26 June 2020 - 16 September 2020
 
 https://github.com/oudesnepelaar/i-ching
