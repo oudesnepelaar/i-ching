@@ -1,5 +1,8 @@
 # I-Ching
-An Arduino driven I-Ching device, that allows one to cast the hexagrams associated with their consultation 
+An Arduino driven I-Ching device, that allows one to cast the hexagrams associated with their consultation.
+
+Currently this project is in development and may receive unannounced updates.
+The PCB is now at version 4 and reasonably stable enough for publication.
 
 Parts:
  - Arduino NANO v3
