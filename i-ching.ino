@@ -68,8 +68,6 @@ const byte LED3_PIN = 4;
 const byte LED2_PIN = 3;
 const byte LED1_PIN = 2;
 
-const byte BUTTON_LED_PIN = 1; // make sure the Serial() connection is not enabled, because this will prevent the use of pins 0 and 1 as IN/OUTPUTS
-
 /* music library init */
 
 const int whole_note_millis = 1000;
@@ -118,7 +116,6 @@ void setup() {
   MAX->clear();
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
-  pinMode (BUTTON_LED_PIN, OUTPUT);
   pinMode (LED6_PIN, OUTPUT);
   pinMode (LED5_PIN, OUTPUT);
   pinMode (LED4_PIN, OUTPUT);
@@ -127,13 +124,11 @@ void setup() {
   pinMode (LED1_PIN, OUTPUT);
 
   setLEDs(0);
-  digitalWrite (BUTTON_LED_PIN, LOW);
 
   printLogo(yinyang);
   delay(1200);
   
   play_complete();
-  digitalWrite (BUTTON_LED_PIN, HIGH);
 }
 
 void setRandom() {
@@ -145,8 +140,6 @@ void setRandom() {
 }
 
 void loop() {
-
-  digitalWrite (BUTTON_LED_PIN, HIGH);
 
   but = digitalRead(BUTTON_PIN);
   if (!but && !busyRolling) {
@@ -176,7 +169,6 @@ void reset() {
 void rollSegment() {
 
   busyRolling = true;
-  digitalWrite (BUTTON_LED_PIN, LOW);
   setRandom();
   
   if (segIndex > 5) {
@@ -301,7 +293,6 @@ void scrollTransientDescription() {
 
 void cycleHexagrams() {
 
-  digitalWrite (BUTTON_LED_PIN, HIGH);
   but = digitalRead(BUTTON_PIN);
 
   char kwhex[4];
